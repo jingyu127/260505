@@ -30,7 +30,7 @@ function gotFaces(results) {
 }
 
 function draw() {
-  // 1. 底層背景顏色 (雖然最後會被覆蓋，但保留作為緩衝)
+  // 1. 先畫滿整個背景顏色
   background('#fdf0d5');
 
   let imgW = width * 0.5;
@@ -38,7 +38,7 @@ function draw() {
   let x = (width - imgW) / 2;
   let y = (height - imgH) / 2;
 
-  // 2. 處理影像與連線
+  // 2. 處理影像與連線 (放在 push/pop 裡面確保不干擾其他繪圖)
   push();
   translate(x + imgW, y);
   scale(-1, 1);
@@ -53,21 +53,18 @@ function draw() {
       image(capture, 0, 0, imgW, imgH);
     pop();
 
-    // --- 繪製線條 ---
-    // 螢光藍色臉部輪廓
-    stroke('#00FFFF');
+    // --- 繪製連線 ---
+    stroke('#00FFFF'); // 螢光藍
     strokeWeight(2);
     noFill();
     drawLines(face, faceOutline, imgW, imgH);
 
-    // 灰色黑眼圈 (線條粗細 15)
-    stroke(51, 51, 51); 
+    stroke(51, 51, 51); // 灰色黑眼圈
     strokeWeight(15);
     drawLines(face, rightEyeOut, imgW, imgH);
     drawLines(face, leftEyeOut, imgW, imgH);
 
-    // 紅色嘴唇與內眼圈
-    stroke(255, 0, 0);
+    stroke(255, 0, 0); // 紅線
     strokeWeight(1);
     drawLines(face, lipGroup1, imgW, imgH);
     drawLines(face, lipGroup2, imgW, imgH);
@@ -76,20 +73,22 @@ function draw() {
   }
   pop();
 
-  // 3. 繪製背景遮罩覆蓋周邊區域
+  // 3. 補強遮罩：確保影像不會超出 50% 範圍 (除了臉部，其他都覆蓋米色)
   noStroke();
   fill('#fdf0d5');
-  rect(0, 0, width, y); // 上
-  rect(0, y + imgH, width, height - (y + imgH)); // 下
-  rect(0, y, x, imgH); // 左
-  rect(x + imgW, y, width - (x + imgW), imgH); // 右
+  rect(0, 0, width, y); 
+  rect(0, y + imgH, width, height - (y + imgH)); 
+  rect(0, y, x, imgH); 
+  rect(x + imgW, y, width - (x + imgW), imgH); 
 
-  // 4. 最後繪製文字：確保出現在最上層，不會被遮掉
+  // 4. 【最終置頂】繪製學號
+  // resetMatrix() 確保文字座標是絕對的，不被先前的 translate 影響
+  resetMatrix();
   fill(0);
   noStroke();
   textSize(32);
-  textAlign(CENTER, CENTER);
-  text("教科414730142", width / 2, 50);
+  textAlign(CENTER, TOP); // 改為對齊頂端
+  text("教科414730142", width / 2, 20); // 座標設為 20，更靠近頂部
 }
 
 function drawMask(faceData, indices, w, h) {
