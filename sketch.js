@@ -30,7 +30,7 @@ function gotFaces(results) {
 }
 
 function draw() {
-  // 1. 先畫滿整個背景顏色
+  // 1. 先畫滿整個背景顏色 (最底層)
   background('#fdf0d5');
 
   let imgW = width * 0.5;
@@ -38,13 +38,13 @@ function draw() {
   let x = (width - imgW) / 2;
   let y = (height - imgH) / 2;
 
-  // 2. 處理影像與連線 (放在 push/pop 裡面確保不干擾其他繪圖)
-  push();
-  translate(x + imgW, y);
-  scale(-1, 1);
-
+  // 2. 影像與線條區塊 (中間層)
   if (faces && faces.length > 0) {
     let face = faces[0];
+    
+    push();
+    translate(x + imgW, y);
+    scale(-1, 1);
 
     // --- 遮罩裁切影像 ---
     push();
@@ -70,27 +70,20 @@ function draw() {
     drawLines(face, lipGroup2, imgW, imgH);
     drawLines(face, rightEyeIn, imgW, imgH);
     drawLines(face, leftEyeIn, imgW, imgH);
+    pop();
   }
-  pop();
 
-  // 3. 補強遮罩：確保影像不會超出 50% 範圍 (除了臉部，其他都覆蓋米色)
-  noStroke();
-  fill('#fdf0d5');
-  rect(0, 0, width, y); 
-  rect(0, y + imgH, width, height - (y + imgH)); 
-  rect(0, y, x, imgH); 
-  rect(x + imgW, y, width - (x + imgW), imgH); 
-
-  // 4. 【最終置頂】繪製學號
-  // resetMatrix() 確保文字座標是絕對的，不被先前的 translate 影響
-  resetMatrix();
+  // 3. 繪製學號文字 (最頂層)
+  // 將文字邏輯完全獨立出來，不受前面的 translate 影響
   fill(0);
   noStroke();
   textSize(32);
-  textAlign(CENTER, TOP); // 改為對齊頂端
-  text("教科414730142", width / 2, 20); // 座標設為 20，更靠近頂部
+  textAlign(CENTER, CENTER);
+  // 直接畫在畫布最上方，不再使用大矩形覆蓋
+  text("教科414730142", width / 2, 50);
 }
 
+// 輔助函式維持不變
 function drawMask(faceData, indices, w, h) {
   beginShape();
   for (let i = 0; i < indices.length; i++) {
