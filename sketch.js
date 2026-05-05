@@ -3,7 +3,10 @@ let faceMesh;
 let faces = [];
 let options = { maxFaces: 1, refineLandmarks: false, flipHorizontal: false };
 
-let lipIndices = [409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291];
+// 第一組節點 (原本的輪廓)
+let group1 = [409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291];
+// 第二組節點 (新增的序列)
+let group2 = [76, 77, 90, 180, 85, 16, 315, 404, 320, 307, 306, 408, 304, 303, 302, 11, 72, 73, 74, 184];
 
 function preload() {
   faceMesh = ml5.faceMesh(options);
@@ -11,11 +14,11 @@ function preload() {
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-  // 強制設定一個常用的比例，減少手機端的裁切誤差
-  capture = createCapture(VIDEO);
+  capture = createCapture(VIDEO, (stream) => {
+    faceMesh.detectStart(capture, gotFaces);
+  });
   capture.size(640, 480);
   capture.hide();
-  faceMesh.detectStart(capture, gotFaces);
 }
 
 function gotFaces(results) {
@@ -25,55 +28,52 @@ function gotFaces(results) {
 function draw() {
   background('#e7c6ff');
 
-  // 1. 文字顯示
-  push();
+  // 顯示文字
   fill(0);
   noStroke();
-  textSize(min(width, height) * 0.05);
+  textSize(32);
   textAlign(CENTER, CENTER);
-  text("教科414730142", width / 2, height * 0.1);
-  pop();
+  text("教科414730860", width / 2, 50);
 
-  // 2. 核心對位邏輯
+  // 影像置中與鏡像
   let imgW = width * 0.5;
   let imgH = height * 0.5;
+  let x = (width - imgW) / 2;
+  let y = (height - imgH) / 2;
 
   push();
-  translate(width / 2, height / 2); // 移到畫布中心
+  translate(x + imgW, y);
+  scale(-1, 1);
+  image(capture, 0, 0, imgW, imgH);
 
-  // 先縮放到你要的大小 (50%)，然後進入「攝影機座標系」
-  // 這樣無論攝影機解析度是多少，紅線跟影像都會等比例縮放
-  let finalScale = min(imgW / capture.width, imgH / capture.height);
-  
-  push();
-    scale(finalScale); // 統一縮放倍率
-    scale(-1, 1);      // 左右翻轉
+  if (faces.length > 0) {
+    let face = faces[0];
     
-    imageMode(CENTER);
-    image(capture, 0, 0); // 在 0,0 繪製，因為外層已經 scale 了
+    stroke(255, 0, 0); // 紅色線條
+    strokeWeight(1);   // 線條粗細改為 1
+    noFill();
 
-    // 3. 繪製紅線
-    if (faces.length > 0) {
-      let face = faces[0];
-      stroke(255, 0, 0);
-      // 因為外層 scale 了，所以線條粗細要反向乘回來，否則會變很細
-      strokeWeight(15 / finalScale); 
-      noFill();
-      
-      beginShape();
-      for (let i = 0; i < lipIndices.length; i++) {
-        let index = lipIndices[i];
-        let pt = face.keypoints[index];
+    // 繪製第一組線條
+    drawLines(face, group1, imgW, imgH);
+    
+    // 繪製第二組線條
+    drawLines(face, group2, imgW, imgH);
+  }
+  pop();
+}
 
-        if (pt) {
-          // 直接使用原始座標，減掉寬高的一半來對齊 CENTER 模式
-          vertex(pt.x - capture.width / 2, pt.y - capture.height / 2);
-        }
-      }
-      endShape(CLOSE);
+// 封裝繪圖邏輯以簡化代碼
+function drawLines(faceData, indices, w, h) {
+  beginShape();
+  for (let i = 0; i < indices.length; i++) {
+    let pt = faceData.keypoints[indices[i]];
+    if (pt) {
+      let px = map(pt.x, 0, capture.width, 0, w);
+      let py = map(pt.y, 0, capture.height, 0, h);
+      vertex(px, py);
     }
-  pop();
-  pop();
+  }
+  endShape();
 }
 
 function windowResized() {
