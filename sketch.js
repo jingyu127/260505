@@ -3,7 +3,7 @@ let faceMesh;
 let faces = [];
 let options = { maxFaces: 1, refineLandmarks: true, flipHorizontal: false };
 
-// --- 點位群組設定 ---
+// --- 點位群組維持不變 ---
 let lipGroup1 = [409, 270, 269, 267, 0, 37, 39, 40, 185, 61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291];
 let lipGroup2 = [76, 77, 90, 180, 85, 16, 315, 404, 320, 307, 306, 408, 304, 303, 302, 11, 72, 73, 74, 184];
 let rightEyeOut = [247, 30, 29, 27, 28, 56, 190, 243, 112, 26, 22, 23, 24, 110]; 
@@ -30,15 +30,20 @@ function gotFaces(results) {
 }
 
 function draw() {
-  // 1. 先畫滿整個背景顏色 (最底層)
-  background('#fdf0d5');
+  // 1. 最底層的全螢幕粉紫色背景
+  background('#e7c6ff');
 
   let imgW = width * 0.5;
   let imgH = height * 0.5;
   let x = (width - imgW) / 2;
   let y = (height - imgH) / 2;
 
-  // 2. 影像與線條區塊 (中間層)
+  // 2. 畫出影像區域的米色底框 (原本消失的框框)
+  noStroke();
+  fill('#fdf0d5');
+  rect(x, y, imgW, imgH);
+
+  // 3. 處理影像與連線
   if (faces && faces.length > 0) {
     let face = faces[0];
     
@@ -73,13 +78,11 @@ function draw() {
     pop();
   }
 
-  // 3. 繪製學號文字 (最頂層)
-  // 將文字邏輯完全獨立出來，不受前面的 translate 影響
+  // 4. 最後畫學號文字，確保在最上層
   fill(0);
   noStroke();
   textSize(32);
   textAlign(CENTER, CENTER);
-  // 直接畫在畫布最上方，不再使用大矩形覆蓋
   text("教科414730142", width / 2, 50);
 }
 
