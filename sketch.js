@@ -30,21 +30,15 @@ function gotFaces(results) {
 }
 
 function draw() {
-  // 1. 底層背景顏色 e7c6ff
-  background('#e7c6ff');
-
-  // 顯示文字
-  fill(0);
-  noStroke();
-  textSize(32);
-  textAlign(CENTER, CENTER);
-  text("教科414730142", width / 2, 50);
+  // 1. 底層背景顏色 (雖然最後會被覆蓋，但保留作為緩衝)
+  background('#fdf0d5');
 
   let imgW = width * 0.5;
   let imgH = height * 0.5;
   let x = (width - imgW) / 2;
   let y = (height - imgH) / 2;
 
+  // 2. 處理影像與連線
   push();
   translate(x + imgW, y);
   scale(-1, 1);
@@ -52,58 +46,52 @@ function draw() {
   if (faces && faces.length > 0) {
     let face = faces[0];
 
-    // --- 關鍵步驟：遮罩裁切 (Masking) ---
-    // 先畫出裁切區域，讓影像只出現在臉部輪廓內
+    // --- 遮罩裁切影像 ---
     push();
       drawMask(face, faceOutline, imgW, imgH); 
-      drawingContext.clip(); // 之後畫的東西都會被限制在臉部輪廓內
+      drawingContext.clip(); 
       image(capture, 0, 0, imgW, imgH);
     pop();
 
-    // --- 遮罩外背景：填滿 fdf0d5 ---
-    // 我們反向思考：先在臉部位置畫影像，然後在外面補顏色
-    // 但更簡單的做法是在 image 繪製前先用全畫布遮罩
-    
-    // 2. 繪製線條效果
-    // 臉部輪廓：螢光藍色 (#00FFFF)，粗細 2
+    // --- 繪製線條 ---
+    // 螢光藍色臉部輪廓
     stroke('#00FFFF');
     strokeWeight(2);
     noFill();
     drawLines(face, faceOutline, imgW, imgH);
 
-    // 黑眼圈：灰色偏黑 (#333333)，粗細 15 (僅外圈)
+    // 灰色黑眼圈 (線條粗細 15)
     stroke(51, 51, 51); 
     strokeWeight(15);
     drawLines(face, rightEyeOut, imgW, imgH);
     drawLines(face, leftEyeOut, imgW, imgH);
 
-    // 其他紅線部分：嘴唇與內眼圈，粗細 1
+    // 紅色嘴唇與內眼圈
     stroke(255, 0, 0);
     strokeWeight(1);
     drawLines(face, lipGroup1, imgW, imgH);
     drawLines(face, lipGroup2, imgW, imgH);
     drawLines(face, rightEyeIn, imgW, imgH);
     drawLines(face, leftEyeIn, imgW, imgH);
-
-  } else {
-    // 沒偵測到臉時，顯示一個空白區塊或提示
-    fill('#fdf0d5');
-    rect(0, 0, imgW, imgH);
   }
   pop();
 
-  // 3. 在影像區塊之外覆蓋 fdf0d5 (達成擷取影像只出現臉部效果)
-  // 這部分是在全域座標處理，確保除了中間臉部，其他都是 fdf0d5
+  // 3. 繪製背景遮罩覆蓋周邊區域
   noStroke();
   fill('#fdf0d5');
-  // 這裡我們畫四個大矩形遮住影像周邊
   rect(0, 0, width, y); // 上
   rect(0, y + imgH, width, height - (y + imgH)); // 下
   rect(0, y, x, imgH); // 左
   rect(x + imgW, y, width - (x + imgW), imgH); // 右
+
+  // 4. 最後繪製文字：確保出現在最上層，不會被遮掉
+  fill(0);
+  noStroke();
+  textSize(32);
+  textAlign(CENTER, CENTER);
+  text("教科414730142", width / 2, 50);
 }
 
-// 專門用來裁切影像的函式
 function drawMask(faceData, indices, w, h) {
   beginShape();
   for (let i = 0; i < indices.length; i++) {
